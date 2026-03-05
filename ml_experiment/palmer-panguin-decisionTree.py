@@ -1,42 +1,32 @@
-import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
+from sklearn.datasets import load_iris
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import precision_score, roc_auc_score
-from sklearn.preprocessing import LabelEncoder
-from sklearn.datasets import fetch_openml
+import pandas as pd
 
-# Load dataset
-penguins = fetch_openml(name="penguins", version=1, as_frame=True)
-df = penguins.frame
+# Load Palmer Penguins dataset (using seaborn as proxy)
+import seaborn as sns
+df = sns.load_dataset('penguins').dropna()
 
-# Drop missing values
-df = df.dropna()
-
-# Encode target
-le = LabelEncoder()
-df['species'] = le.fit_transform(df['species'])
-
-X = df.drop('species', axis=1)
+# Prepare features
+df['species'] = df['species'].astype('category').cat.codes
+X = pd.get_dummies(df.drop('species', axis=1))
 y = df['species']
 
-# Encode categorical features
-X = pd.get_dummies(X)
-
-# Train-test split
+# Split data
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Build model
-model = DecisionTreeClassifier()
+# Build Decision Tree model
+model = DecisionTreeClassifier(random_state=42)
 model.fit(X_train, y_train)
 
 # Predictions
 y_pred = model.predict(X_test)
-y_prob = model.predict_proba(X_test)
+y_proba = model.predict_proba(X_test)
 
 # Metrics
-precision = precision_score(y_test, y_pred, average='macro')
-auc = roc_auc_score(y_test, y_prob, multi_class='ovr')
+precision = precision_score(y_test, y_pred, average='weighted')
+auc = roc_auc_score(y_test, y_proba, multi_class='ovr')
 
-print("Precision:", precision)
-print("AUC Score:", auc)
+print(f"Precision: {precision:.4f}")
+print(f"AUC Score: {auc:.4f}")
